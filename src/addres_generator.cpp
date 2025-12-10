@@ -149,3 +149,34 @@ wallet generate_bitcoin_wallet(const std::string mnemonic){
     wal.address_p2sh = address_p2sh;
     return wal;
 }
+
+wallet generate_solana_wallet(const std::string& mnemonic)
+{
+    uint8_t seed[64];
+    HDNode node;
+
+    mnemonic_to_seed(mnemonic.c_str(), "", seed, NULL);
+
+    hdnode_from_seed(seed, sizeof(seed), ED25519_NAME, &node);
+
+    HDNode sol = node;
+    hdnode_private_ckd_prime(&sol, 44);
+    hdnode_private_ckd_prime(&sol, 501);
+    hdnode_private_ckd_prime(&sol, 0);
+    hdnode_private_ckd_prime(&sol, 0);
+
+    uint8_t pubkey[32];
+    ed25519_publickey(sol.private_key, pubkey);
+
+    char address58[100];
+    size_t addr_len = sizeof(address58);
+    b58enc(address58, &addr_len, pubkey, 32);
+
+    wallet w;
+    w.address = std::string(address58);
+    w.public_key = bytes_to_hex_string(pubkey, 32);
+    w.private_key = bytes_to_hex_string(sol.private_key, 32);
+    w.mnemonic = mnemonic;
+
+    return w;
+}
